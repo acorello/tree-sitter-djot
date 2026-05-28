@@ -874,15 +874,6 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // Prevent inline verbatim from swallowing preceding whitespace.
-  bool only_inline_verbatim_valid = !valid_symbols[CODE_BLOCK_BEGIN] &&
-                                    !valid_symbols[CODE_BLOCK_END] &&
-                                    !valid_symbols[BLOCK_CLOSE];
-  if (only_inline_verbatim_valid &&
-      (s->state & STATE_CONSUMED_INDENT_AT_SCAN_START)) {
-    return false;
-  }
-
   uint8_t ticks = consume_chars(s, lexer, '`');
   if (ticks == 0) {
     return false;
@@ -899,6 +890,11 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
         try_begin_code_block(s, lexer, ticks)) {
       return true;
     }
+  }
+
+  // Verbatim is not allowed to consume indent spaces.
+  if (s->state & STATE_CONSUMED_INDENT_AT_SCAN_START) {
+    return false;
   }
 
   Inline *top = peek_inline(s);
@@ -1940,8 +1936,9 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 }
 
 static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  bool can_be_div = valid_symbols[DIV_OPENER_CHECK] || valid_symbols[DIV_BEGIN] ||
-                    valid_symbols[DIV_END] || valid_symbols[BLOCK_CLOSE];
+  bool can_be_div = valid_symbols[DIV_OPENER_CHECK] ||
+                    valid_symbols[DIV_BEGIN] || valid_symbols[DIV_END] ||
+                    valid_symbols[BLOCK_CLOSE];
   if (!valid_symbols[LIST_MARKER_DEFINITION] && !can_be_div) {
     return false;
   }
@@ -2747,9 +2744,8 @@ static bool parse_block_attribute_end(Scanner *s, TSLexer *lexer) {
 
 // Zero-width bridge attaching a block attribute's trailing same-line content to
 // an open block quote (gated before a required element, so it can't loop).
-static bool parse_block_attribute_quote_continuation(Scanner *s,
-                                                      TSLexer *lexer,
-                                                      uint32_t start_column) {
+static bool parse_block_attribute_quote_continuation(Scanner *s, TSLexer *lexer,
+                                                     uint32_t start_column) {
   if (!(s->state & STATE_BLOCK_ATTRIBUTE_TRAILING)) {
     return false;
   }
@@ -3747,7 +3743,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 }
 
 static void reset(Scanner *s) {
-  // Use array_clear, not array_init (init nulls `contents` and leaks the buffer).
+  // Use array_clear, not array_init (init nulls `contents` and leaks the
+  // buffer).
   array_clear(&s->open_inline);
   array_clear(&s->open_blocks);
   s->blocks_to_close = 0;
