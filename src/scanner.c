@@ -1846,7 +1846,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   // If we should end the `a` list item we need to be able to scan `- b`
   // later in this function.
   // But first we need to skip the `> ` tokens.
-  bool ending_newline;
+  bool ending_newline = false;
   uint8_t block_quote_markers =
       scan_block_quote_markers(s, lexer, &ending_newline);
 
@@ -1881,7 +1881,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
         has_block_quote_continuation = true;
       }
 
-      bool second_newline;
+      bool second_newline = false;
       uint8_t second_block_quote_markers =
           scan_block_quote_markers(s, lexer, &second_newline);
 
@@ -2534,7 +2534,7 @@ static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   }
 
   // Scan all `> ` markers we can find.
-  bool ending_newline;
+  bool ending_newline = false;
   uint8_t marker_count = scan_block_quote_markers(s, lexer, &ending_newline);
 
   // No blockquote marker.
