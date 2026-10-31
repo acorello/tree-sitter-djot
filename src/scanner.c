@@ -1287,6 +1287,7 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
   return false;
 }
 
+// Leaves the closing punctuation unconsumed so lookahead callers can inspect it.
 static TokenType scan_ordered_list_marker_token_type(Scanner *s,
                                                      TSLexer *lexer) {
   // A marker can be `(a)` or `a)`.
@@ -1303,7 +1304,6 @@ static TokenType scan_ordered_list_marker_token_type(Scanner *s,
 
   switch (lexer->lookahead) {
   case ')':
-    advance(s, lexer);
     if (surrounding_parens) {
       // (a)
       switch (list_type) {
@@ -1339,7 +1339,6 @@ static TokenType scan_ordered_list_marker_token_type(Scanner *s,
     }
   case '.':
     // a.
-    advance(s, lexer);
     switch (list_type) {
     case DECIMAL:
       return LIST_MARKER_DECIMAL_PERIOD;
@@ -1365,6 +1364,7 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
     return res;
   }
 
+  advance(s, lexer);
   if (lexer->lookahead == ' ') {
     advance(s, lexer);
     return res;
@@ -1432,6 +1432,36 @@ static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
 static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
   TokenType marker = scan_list_marker_token(s, lexer);
   return marker != IGNORED;
+}
+
+// Look ahead at a paragraph line, allowing lazy indentation but not list
+// markers. A failed marker probe may consume punctuation; report it so inline
+// callers can still recognise a delimiter at the start of the line.
+static bool scan_inline_line_boundary(Scanner *s, TSLexer *lexer,
+                                      char *consumed_marker) {
+  *consumed_marker = 0;
+  consume_whitespace(s, lexer);
+  if (lexer->eof(lexer) || lexer->lookahead == '\n') {
+    return true;
+  }
+  if (!find_list(s)) {
+    return false;
+  }
+
+  char first = lexer->lookahead;
+  if (first == '-' || first == '*' || first == '+' || first == ':') {
+    advance(s, lexer);
+    *consumed_marker = first;
+    return lexer->lookahead == ' ' || lexer->lookahead == '\n' ||
+           lexer->eof(lexer);
+  }
+
+  if (scan_ordered_list_marker_token_type(s, lexer) == IGNORED) {
+    return false;
+  }
+  *consumed_marker = lexer->lookahead;
+  advance(s, lexer);
+  return lexer->lookahead == ' ';
 }
 
 // Can we scan a block closing marker?
@@ -3232,18 +3262,19 @@ static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
 }
 
 // Look ahead within the current list paragraph, stopping at blank lines or
-// dedented content. The caller emits a zero-width gate without marking the
-// lookahead as part of the token.
+// list markers while allowing lazy continuation lines. The caller emits a
+// zero-width gate without marking the lookahead as part of the token.
 static bool scan_for_list_span_close(Scanner *s, TSLexer *lexer, char c) {
-  Block *list = find_list(s);
   while (!lexer->eof(lexer)) {
     char ch = lexer->lookahead;
     if (ch == '\n' || ch == '\r') {
       advance(s, lexer);
-      uint8_t indent = consume_whitespace(s, lexer);
-      if (lexer->eof(lexer) || lexer->lookahead == '\n' ||
-          indent < list->data) {
+      char consumed_marker;
+      if (scan_inline_line_boundary(s, lexer, &consumed_marker)) {
         return false;
+      }
+      if (consumed_marker == c) {
+        return true;
       }
       continue;
     }

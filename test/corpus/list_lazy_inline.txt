@@ -1,0 +1,123 @@
+===============================================================================
+List: strong in a lazy continuation
+===============================================================================
+- *Alpha
+Beta*
+- Next
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (strong (strong_begin) (content) (strong_end)))))
+    (list_item (list_marker_dash) (list_item_content (paragraph)))))
+
+===============================================================================
+List: emphasis in a lazy continuation
+===============================================================================
+- _Alpha
+Beta_
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))))))
+
+===============================================================================
+List: braced strong with a star at the start of a lazy line
+===============================================================================
+- {*Alpha
+*Beta*}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (strong (strong_begin) (content) (strong_end)))))))
+
+===============================================================================
+List: braced emphasis in a nested lazy continuation
+===============================================================================
+- Parent
+
+  - {_Alpha
+Beta_}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph)
+      (list
+        (list_item (list_marker_dash) (list_item_content
+          (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))))))))
+
+===============================================================================
+List: strong does not cross a star item marker
+===============================================================================
+* *Alpha
+* Beta*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_star) (list_item_content (paragraph)))
+    (list_item (list_marker_star) (list_item_content (paragraph)))))
+
+===============================================================================
+List: strong does not cross a decimal item marker
+===============================================================================
+1. *Alpha
+2. Beta*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_decimal_period) (list_item_content (paragraph)))
+    (list_item (list_marker_decimal_period) (list_item_content (paragraph)))))
+
+===============================================================================
+List: strong does not cross a parenthesised item marker
+===============================================================================
+(a) *Alpha
+(b) Beta*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_lower_alpha_parens) (list_item_content (paragraph)))
+    (list_item (list_marker_lower_alpha_parens) (list_item_content (paragraph)))))
+
+===============================================================================
+List: a non-marker star remains eligible on a lazy line
+===============================================================================
+- {*Alpha
+*not a bullet*}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (strong (strong_begin) (content) (strong_end)))))))
+
+===============================================================================
+List: lazy strong does not cross a blank line
+===============================================================================
+- *Alpha
+
+Beta*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list (list_item (list_marker_dash) (list_item_content (paragraph))))
+  (paragraph))
