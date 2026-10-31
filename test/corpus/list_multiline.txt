@@ -1,0 +1,123 @@
+===============================================================================
+List: multiline strong in a paragraph and an item
+===============================================================================
+*Paragraph
+text*
+
+- *List
+  text*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end)))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (strong (strong_begin) (content) (strong_end)))))))
+
+===============================================================================
+List: multiline emphasis in an item
+===============================================================================
+- _First
+  second_
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (emphasis (emphasis_begin) (content) (emphasis_end)))))))
+
+===============================================================================
+List: multiline strong does not swallow the following item
+===============================================================================
+- *First
+  second*
+- *Third
+  fourth*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (strong (strong_begin) (content) (strong_end)))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (strong (strong_begin) (content) (strong_end)))))))
+
+===============================================================================
+List: unmatched strong does not close in the following item
+===============================================================================
+- *First
+- second*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content (paragraph)))
+    (list_item (list_marker_dash) (list_item_content (paragraph)))))
+
+===============================================================================
+List: strong does not cross a blank line
+===============================================================================
+- *First
+
+  second*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content (paragraph) (paragraph)))))
+
+===============================================================================
+List: strong does not close in a dedented paragraph
+===============================================================================
+- *First
+
+second*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content (paragraph))))
+  (paragraph))
+
+===============================================================================
+List: multiline strong in a nested item
+===============================================================================
+- parent
+  - *First
+    second*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (list
+          (list_item
+            (list_marker_dash)
+            (list_item_content
+              (paragraph
+                (strong (strong_begin) (content) (strong_end))))))))))

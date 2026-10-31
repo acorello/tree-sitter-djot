@@ -7557,7 +7557,7 @@ List: emphasis-bracketed item content does not cross lines
             (strong_end)))))))
 
 ===============================================================================
-List: multi-line emphasis inside list falls back to text without erroring
+List: multi-line emphasis inside list is recognised
 ===============================================================================
 - item
 
@@ -7572,7 +7572,11 @@ List: multi-line emphasis inside list falls back to text without erroring
       (list_marker_dash)
       (list_item_content
         (paragraph)
-        (paragraph)))))
+        (paragraph
+          (emphasis
+            (emphasis_begin)
+            (content)
+            (emphasis_end)))))))
 
 ===============================================================================
 Inline: lone star at start does not open strong; later complete pair wins

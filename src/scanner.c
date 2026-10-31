@@ -3231,15 +3231,21 @@ static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
   }
 }
 
-// Scan ahead to find the close marker `c` on the same line. Returns true if
-// found before any newline / EOF. Advances the lexer during the scan; callers
-// only invoke this when they're about to emit a zero-width gate token (no
-// `mark_end` after the scan), so the advances don't extend the emitted token.
-static bool scan_for_same_line_close(Scanner *s, TSLexer *lexer, char c) {
+// Look ahead within the current list paragraph, stopping at blank lines or
+// dedented content. The caller emits a zero-width gate without marking the
+// lookahead as part of the token.
+static bool scan_for_list_span_close(Scanner *s, TSLexer *lexer, char c) {
+  Block *list = find_list(s);
   while (!lexer->eof(lexer)) {
     char ch = lexer->lookahead;
     if (ch == '\n' || ch == '\r') {
-      return false;
+      advance(s, lexer);
+      uint8_t indent = consume_whitespace(s, lexer);
+      if (lexer->eof(lexer) || lexer->lookahead == '\n' ||
+          indent < list->data) {
+        return false;
+      }
+      continue;
     }
     if (ch == c) {
       return true;
@@ -3289,14 +3295,12 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
     return false;
   }
   Inline *top = peek_inline(s);
-  // Inside a list, require emhasis/strong's single-form opener to find its
-  // close on the same line. Prevents a shifted GLR parse of `- *N*:` items
-  // where strong opens at the second `*` and closes against the next item's
-  // first `*`, collapsing items. IN_FALLBACK stays reachable so multi-line
-  // emphasis can still fall back to text.
+  // Keep emphasis/strong lookahead inside the list paragraph so a shifted
+  // GLR parse cannot pair one item's closing marker with the next item's
+  // opening marker. Indented continuation lines remain eligible.
   if (is_single_emphasis_or_strong(inline_type) &&
       !valid_symbols[IN_FALLBACK] && find_list(s) != NULL) {
-    if (!scan_for_same_line_close(s, lexer, inline_marker(inline_type))) {
+    if (!scan_for_list_span_close(s, lexer, inline_marker(inline_type))) {
       return false;
     }
   }
