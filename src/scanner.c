@@ -1443,7 +1443,7 @@ static bool scan_inline_line_boundary(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  char first = lexer->lookahead;
+  int32_t first = lexer->lookahead;
   if (first == '-' || first == '*' || first == '+' || first == ':') {
     advance(s, lexer);
     *consumed_marker = first;
@@ -3029,12 +3029,39 @@ static bool try_consume_span_end_marker(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-// Scan until `c`, aborting if an ending marker for the `top` element is
-// found.
+// Skip an escaped character, but leave hard line breaks for boundary checks.
+static void skip_inline_escape(Scanner *s, TSLexer *lexer) {
+  advance(s, lexer);
+  if (!lexer->eof(lexer) && lexer->lookahead != '\n') {
+    advance(s, lexer);
+  }
+}
+
+// A line-prefix probe can consume punctuation without finding a list marker.
+// Preserve the enclosing span's precedence even in that case.
+static bool consumed_marker_closes_span(TSLexer *lexer, char marker,
+                                        const Inline *top) {
+  if (marker == 0 || !top || marker != inline_marker(top->type)) {
+    return false;
+  }
+  switch (inline_span_type(top->type)) {
+  case SpanBracketed:
+    return lexer->lookahead == '}';
+  case SpanSingle:
+    return true;
+  default:
+    // A bare emphasis/strong closer cannot immediately follow a line break.
+    return false;
+  }
+}
+
+// Scan through `c`, aborting at a paragraph boundary or an ending marker for
+// `top`. The target is consumed, including when a line-prefix probe found it.
 static bool scan_until(Scanner *s, TSLexer *lexer, char c, const Inline *top) {
   while (!lexer->eof(lexer)) {
     // Check target before span-end so `[ref]`'s `]` beats an outer `]` close.
     if (lexer->lookahead == c) {
+      advance(s, lexer);
       return true;
     }
     if (top) {
@@ -3047,13 +3074,17 @@ static bool scan_until(Scanner *s, TSLexer *lexer, char c, const Inline *top) {
       }
     }
     if (lexer->lookahead == '\\') {
-      advance(s, lexer);
-      advance(s, lexer);
+      skip_inline_escape(s, lexer);
     } else if (lexer->lookahead == '\n') {
-      // One newline is ok in inline spans, but not several in a row.
       advance(s, lexer);
-      consume_whitespace(s, lexer);
-      if (lexer->lookahead == '\n') {
+      char consumed_marker;
+      if (scan_inline_line_boundary(s, lexer, &consumed_marker)) {
+        return false;
+      }
+      if (consumed_marker == c) {
+        return true;
+      }
+      if (consumed_marker_closes_span(lexer, consumed_marker, top)) {
         return false;
       }
     } else {
@@ -3095,14 +3126,12 @@ static bool scan_balanced_close_bracket(Scanner *s, TSLexer *lexer,
       depth++;
       advance(s, lexer);
     } else if (lexer->lookahead == '\\') {
-      advance(s, lexer);
-      if (!lexer->eof(lexer)) {
-        advance(s, lexer);
-      }
+      skip_inline_escape(s, lexer);
     } else if (lexer->lookahead == '\n') {
       advance(s, lexer);
-      consume_whitespace(s, lexer);
-      if (lexer->lookahead == '\n') {
+      char consumed_marker;
+      if (scan_inline_line_boundary(s, lexer, &consumed_marker) ||
+          consumed_marker_closes_span(lexer, consumed_marker, top)) {
         return false;
       }
     } else {
@@ -3181,6 +3210,9 @@ static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
     synthetic_top.data = 0;
     top = &synthetic_top;
   }
+  // The pending opener belongs only to this bracket probe, including when
+  // its gate is rejected and the bracket falls back to text.
+  s->state &= ~STATE_PENDING_OPENER_MASK;
 
   if (!scan_balanced_close_bracket(s, lexer, top)) {
     return false;
@@ -3191,7 +3223,6 @@ static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  s->state &= ~STATE_PENDING_OPENER_MASK;
   lexer->result_symbol = BRACKETED_TEXT_OPEN_CHECK;
   return true;
 }
@@ -3242,7 +3273,6 @@ static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
   if (!scan_until(s, lexer, ']', top_inline)) {
     return;
   }
-  advance(s, lexer);
 
   if (lexer->lookahead == '(') {
     if (scan_until(s, lexer, ')', top_inline)) {
@@ -3277,12 +3307,10 @@ static bool scan_for_list_span_close(Scanner *s, TSLexer *lexer, char c) {
       return true;
     }
     if (ch == '\\') {
+      skip_inline_escape(s, lexer);
+    } else {
       advance(s, lexer);
-      if (lexer->eof(lexer)) {
-        return false;
-      }
     }
-    advance(s, lexer);
   }
   return false;
 }
@@ -3358,7 +3386,10 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
     // This is done here at `[` as a fallback character so when we reach `(`
     // we can abort and prune that branch (since we should parse it as a
     // link).
-    if (inline_type == SQUARE_BRACKET_SPAN) {
+    // A valid open-check gate already probed this opener, even on rejection.
+    if (inline_type == SQUARE_BRACKET_SPAN &&
+        !valid_symbols[BRACKETED_TEXT_OPEN_CHECK] &&
+        !valid_symbols[IMAGE_OPEN_CHECK]) {
       update_square_bracket_lookahead_states(s, lexer, top);
     }
 
@@ -3631,14 +3662,18 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[IMAGE_OPEN_CHECK] &&
-      parse_image_open_check(s, lexer, valid_symbols)) {
-    return true;
-  }
-
-  if (valid_symbols[BRACKETED_TEXT_OPEN_CHECK] &&
-      parse_bracketed_text_open_check(s, lexer, valid_symbols)) {
-    return true;
+  // A rejected gate has already advanced the lookahead lexer. Its fallback
+  // must not probe again from that later position or retain trailer-blocking
+  // flags belonging to a different bracketed opener.
+  if (valid_symbols[IMAGE_OPEN_CHECK] ||
+      valid_symbols[BRACKETED_TEXT_OPEN_CHECK]) {
+    s->state &= ~(STATE_BRACKET_STARTS_INLINE_LINK | STATE_BRACKET_STARTS_SPAN);
+    bool accepted = valid_symbols[IMAGE_OPEN_CHECK]
+                        ? parse_image_open_check(s, lexer, valid_symbols)
+                        : parse_bracketed_text_open_check(s, lexer, valid_symbols);
+    if (accepted) {
+      return true;
+    }
   }
 
   switch (lexer->lookahead) {

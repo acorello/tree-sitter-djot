@@ -1,0 +1,353 @@
+===============================================================================
+List: a link cannot close in the next item
+===============================================================================
+- [Alpha
+- Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: an image cannot close in the next item
+===============================================================================
+- ![Alpha
+- Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: an attributed span cannot close in the next item
+===============================================================================
+- [Alpha
+- Beta]{.x}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_attribute
+            (args
+              (class))))))))
+
+===============================================================================
+List: a link cannot cross a blank line
+===============================================================================
+- [Alpha
+
+  Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (paragraph)))))
+
+===============================================================================
+List: an image cannot cross a blank line
+===============================================================================
+- ![Alpha
+
+  Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (paragraph)))))
+
+===============================================================================
+List: an attributed span cannot cross a blank line
+===============================================================================
+- [Alpha
+
+  Beta]{.x}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (paragraph
+          (inline_attribute
+            (args
+              (class))))))))
+
+===============================================================================
+List: a link keeps a lazy continuation
+===============================================================================
+- [Alpha
+Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
+
+===============================================================================
+List: an image keeps an indented continuation
+===============================================================================
+- ![Alpha
+  Beta](/url)
+- Next
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_image
+            (image_description)
+            (inline_link_destination)))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: an attributed span keeps a nested lazy continuation
+===============================================================================
+- Parent
+
+  - [Alpha
+Beta]{.x}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (list
+          (list_item
+            (list_marker_dash)
+            (list_item_content
+              (paragraph
+                (span
+                  (content)
+                  (inline_attribute
+                    (args
+                      (class))))))))))))
+
+===============================================================================
+List: a reference link cannot close in the next ordered item
+===============================================================================
+1. [Alpha
+2. Beta][ref]
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_decimal_period)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: a collapsed image cannot close in the next star item
+===============================================================================
+* ![Alpha
+* Beta][]
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_star)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_star)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: a link URL cannot cross an item boundary
+===============================================================================
+- [Alpha](/url
+- Beta)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: a reference label cannot cross an item boundary
+===============================================================================
+- [Alpha][ref
+- Beta]
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: a non-marker ordered prefix can close a multiline URL
+===============================================================================
+- [Alpha](/url
+  b)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
+
+===============================================================================
+List: a non-marker star does not interrupt a link
+===============================================================================
+- [Alpha
+*Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
+
+===============================================================================
+List: an escaped bracket is not a link closer
+===============================================================================
+- [Alpha\]
+  Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text
+              (backslash_escape))
+            (inline_link_destination)))))))
+
+===============================================================================
+List: a hard line break cannot hide an item boundary from a link
+===============================================================================
+- [Alpha\
+- Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (hard_line_break))))
+    (list_item (list_marker_dash) (list_item_content (paragraph)))))
+
+===============================================================================
+List: an image keeps a hard line break within its paragraph
+===============================================================================
+- ![Alpha\
+  Beta](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (inline_image (image_description (hard_line_break)) (inline_link_destination)))))))
+
+===============================================================================
+List: a hard line break cannot hide an item boundary from strong
+===============================================================================
+- *Alpha\
+- Beta*
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (hard_line_break))))
+    (list_item (list_marker_dash) (list_item_content (paragraph)))))

@@ -1,5 +1,6 @@
 * text eol=lf
 test/corpus/syntax_crlf.txt text eol=crlf
+test/corpus/list_inline_crlf.txt text eol=crlf
 
 src/*.json linguist-generated
 src/parser.c linguist-generated
