@@ -288,6 +288,8 @@ static uint8_t encode_pending_opener(char marker) {
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
+static bool scan_inline_line_boundary(Scanner *s, TSLexer *lexer,
+                                      char *consumed_marker);
 
 #ifdef DEBUG
 static char *block_type_s(BlockType t);
@@ -775,21 +777,14 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
 
   while (!lexer->eof(lexer)) {
     if (lexer->lookahead == '\n') {
-      // We should only end verbatim if the paragraph is ended by a
-      // blankline.
-
-      // Advance over the first newline.
+      // Leave the token end before the newline when the containing paragraph
+      // ends, so the implicit closer and block parser can process the boundary.
       advance(s, lexer);
-      // Remove any whitespace on the next line.
-      consume_whitespace(s, lexer);
-      if (lexer->eof(lexer) || lexer->lookahead == '\n') {
-        // Found a blankline, meaning the paragraph containing the varbatim
-        // should be closed. So now we can close the verbatim.
+      char consumed_marker;
+      if (scan_inline_line_boundary(s, lexer, &consumed_marker)) {
         break;
-      } else {
-        // No blankline, continue parsing.
-        lexer->mark_end(lexer);
       }
+      lexer->mark_end(lexer);
     } else if (lexer->lookahead == '`') {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(s, lexer, '`');

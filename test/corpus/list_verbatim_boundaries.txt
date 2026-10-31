@@ -1,0 +1,120 @@
+===============================================================================
+List: unclosed verbatim ends before the next item
+===============================================================================
+- `Alpha
+- Beta`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: unclosed math ends before the next item
+===============================================================================
+- $`Alpha
+- Beta`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (math (math_marker) (math_marker_begin) (content) (math_marker_end)))))
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: raw inline cannot borrow a closer from the next item
+===============================================================================
+- `Alpha
+- Beta`{=html}
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: verbatim keeps a lazy continuation
+===============================================================================
+- `Alpha
+Beta`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: verbatim keeps indented non-marker punctuation
+===============================================================================
+- `Alpha
+  *Beta*`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: nested unclosed verbatim ends before the parent item
+===============================================================================
+- Parent
+
+  - `Alpha
+- Beta`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph)
+      (list
+        (list_item (list_marker_dash) (list_item_content
+          (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end))))))))
+    (list_item (list_marker_dash) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: unclosed double-backtick verbatim ends before a star item
+===============================================================================
+* ``Alpha
+* Beta``
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_star) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))
+    (list_item (list_marker_star) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
+
+===============================================================================
+List: unclosed verbatim ends before a parenthesised item
+===============================================================================
+(a) `Alpha
+(b) Beta`
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item (list_marker_lower_alpha_parens) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))
+    (list_item (list_marker_lower_alpha_parens) (list_item_content
+      (paragraph (verbatim (verbatim_marker_begin) (content) (verbatim_marker_end)))))))
